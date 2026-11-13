@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: courses_for_bu
+    ports:
+        - "55432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./data:/backup:ro
+      - ./docker/restore.sh:/docker-entrypoint-initdb.d/10-restore.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d courses_for_bu"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  # Строит индекс один раз, при повторных запусках пропускается
+  ingest:
+    build: .
+    env_file: .env
+    command: sh -c "[ -f data/embeddings.npy ] || python -m rag.ingest"
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+
+  bot:
+    build: .
+    env_file: .env
+    command: python -m bot.main        # <-- Участница 1: поправить на свою точку входа
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      ingest:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  pgdata:

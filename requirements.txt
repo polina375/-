@@ -1,0 +1,6 @@
+psycopg[binary]
+numpy
+rank-bm25
+fastembed
+pydantic
+gigachat

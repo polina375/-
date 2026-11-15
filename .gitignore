@@ -1,0 +1,27 @@
+# Секретные ключи
+.env
+.env.*
+
+# Виртуальное окружение
+.venv/
+venv/
+
+# Данные и индексы
+data/
+data/chunks.jsonl
+data/embeddings.npy
+*.backup
+
+# Python
+__pycache__/
+*.py[cod]
+
+# PyCharm
+.idea/
+
+# Локальная база бота
+*.db
+*.sqlite3
+
+# Исключение для примера конфигурации
+!.env.example

@@ -31,7 +31,6 @@ SOURCES = [
 
 TAG_RE = re.compile(r"<[^>]+>")
 
-
 def clean(raw: str | None) -> str:
     if not raw:
         return ""
@@ -46,6 +45,14 @@ def chunk(text: str) -> list[str]:
     step = CHUNK_WORDS - OVERLAP
     return [" ".join(words[i:i + CHUNK_WORDS]) for i in range(0, len(words), step)]
 
+def full_url(etype: str, slug: str | None) -> str | None:
+    """Слаг -> полный адрес. Если префикс не задан или слага нет, ссылки не будет."""
+    if not slug:
+        return None
+    if slug.startswith("http"):
+        return slug
+    prefix = os.getenv(f"URL_PREFIX_{etype.upper()}")
+    return prefix.rstrip("/") + "/" + slug.lstrip("/") if prefix else None
 
 def fetch(conn, etype, table, blocks, fk, paid_sql):
     q = f'''
@@ -62,8 +69,8 @@ def fetch(conn, etype, table, blocks, fk, paid_sql):
             bq = f'SELECT "HtmlContent" FROM "{blocks}" WHERE "{fk}" = %s ORDER BY "Order"'
             parts += [clean(b[0]) for b in conn.execute(bq, (eid,)).fetchall()]
         body = " ".join(p for p in parts if p)
-        yield dict(id=eid, type=etype, title=title or "", url=url, is_paid=bool(is_paid), body=body)
-
+        yield dict(id=eid, type=etype, title=title or "", url=full_url(etype, url),
+                   is_paid=bool(is_paid), body=body)
 
 def main():
     OUT.mkdir(exist_ok=True)
